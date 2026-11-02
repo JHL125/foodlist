@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import { supabase, adminRequest, explainError } from './supabase.js'
+import { supabase, configProblem, adminRequest, explainError } from './supabase.js'
 import ProductDetail from './ProductDetail.jsx'
 import ProductForm from './ProductForm.jsx'
 import { hasValue } from './utils.js'
@@ -168,6 +168,8 @@ function SetupGuide() {
   return (
     <div className="app setup">
       <h1>Supabase 연결 설정이 필요해요</h1>
+      {configProblem && <div className="alert error">{configProblem}</div>}
+      <p className="muted">로컬은 <code>.env.local</code>, 배포(Vercel)는 프로젝트의 Environment Variables에서 설정해요.</p>
       <ol>
         <li><code>product-admin/.env.local</code> 파일을 열어요.</li>
         <li>Supabase 대시보드 → Project Settings에서 세 값을 복사해 <code>=</code> 뒤에 붙여 넣고 저장해요.

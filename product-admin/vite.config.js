@@ -13,11 +13,15 @@ const PRODUCT_COLUMNS = [
 // 상품 추가 · 삭제 API — 개발 서버(이 PC) 안에서만 service_role 키를 쓴다
 // 브라우저는 /api/products 로 요청만 보내고, 키는 브라우저로 가지 않는다
 function adminApi(env) {
-  const url = env.VITE_SUPABASE_URL
-  const key = env.SUPABASE_SERVICE_ROLE_KEY
-  const admin = url && key
-    ? createClient(url, key, { auth: { persistSession: false, autoRefreshToken: false } })
-    : null
+  // 관리자 연결은 첫 추가 · 삭제 요청이 올 때 만든다 (빌드 중에는 service_role 키를 쓰지 않음)
+  let admin = null
+  function getAdmin() {
+    const url = env.VITE_SUPABASE_URL
+    const key = env.SUPABASE_SERVICE_ROLE_KEY
+    if (!url || !key) return null
+    admin ??= createClient(url, key, { auth: { persistSession: false, autoRefreshToken: false } })
+    return admin
+  }
 
   const send = (res, status, body) => {
     res.statusCode = status
@@ -42,11 +46,12 @@ function adminApi(env) {
     if (!origin || !ALLOWED_ORIGINS.includes(origin)) {
       return send(res, 403, { error: { code: 'FORBIDDEN_ORIGIN', message: '이 페이지에서 보낸 요청만 처리합니다.' } })
     }
-    if (!admin) {
-      return send(res, 500, { error: { code: 'NO_SERVICE_KEY', message: 'SUPABASE_SERVICE_ROLE_KEY가 설정되지 않았습니다.' } })
-    }
-
     try {
+      const admin = getAdmin() // URL 형식이 틀리면 여기서 오류 → 아래 catch에서 500으로 응답
+      if (!admin) {
+        return send(res, 500, { error: { code: 'NO_SERVICE_KEY', message: 'SUPABASE_SERVICE_ROLE_KEY가 설정되지 않았습니다.' } })
+      }
+
       if (req.method === 'POST' && req.url === '/api/products') {
         if (!req.headers['content-type']?.startsWith('application/json')) {
           return send(res, 415, { error: { message: 'JSON으로 보내 주세요.' } })

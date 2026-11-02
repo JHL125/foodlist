@@ -3,8 +3,19 @@ import { createClient } from '@supabase/supabase-js'
 const url = import.meta.env.VITE_SUPABASE_URL
 const key = import.meta.env.VITE_SUPABASE_ANON_KEY
 
-// 조회용 (anon 키). .env.local이 비어 있으면 null — 화면에서 설정 안내를 보여 준다
-export const supabase = url && key ? createClient(url, key) : null
+// URL이 https://로 시작하는 올바른 주소인지 (공백 · 따옴표가 섞이거나 이름과 값이 바뀐 경우를 걸러냄)
+const validUrl = (() => {
+  try { return new URL(url).protocol === 'https:' } catch { return false }
+})()
+
+// 설정 문제를 화면에 보여 줄 문장. 문제가 없으면 ''
+export const configProblem =
+  !url || !key ? ''  // 값이 비어 있음 → 기본 설정 안내
+  : !validUrl ? `VITE_SUPABASE_URL 값이 올바른 주소가 아니에요. https://○○○.supabase.co 형식인지, 공백이나 따옴표가 섞이지 않았는지 확인해 주세요.`
+  : ''
+
+// 조회용 (anon 키). 값이 비었거나 URL이 잘못되면 null — 화면에서 설정 안내를 보여 준다
+export const supabase = url && key && validUrl ? createClient(url, key) : null
 
 // 추가 · 삭제는 개발 서버의 /api/products 로 보낸다 (service_role 키는 서버에만 있음)
 // 성공하면 null, 실패하면 { code, message } 를 돌려준다
